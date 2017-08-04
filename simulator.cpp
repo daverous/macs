@@ -2,13 +2,28 @@
 #include<sstream>
 #include<fstream>
 #include<stdexcept>
+#include<tuple>
 #include<math.h>
+#include <boost/algorithm/string/split.hpp> // Include for boost::split
+#include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
+//#include <RcppArmadillo.h>
+#include <armadillo>
+
+// [[Rcpp::depends(RcppArmadillo)]]
+
+// [[Rcpp::export]]
 
 #include "simulator.h"
 
 using namespace std;
 
 const double Node::MAX_HEIGHT=1e50;
+#include <boost/algorithm/string/split.hpp> // Include for boost::split
+
+
+AlphaSimRReturn::AlphaSimRReturn(){}
+
+
 
 RandNumGenerator::RandNumGenerator(unsigned long iRandomSeed){
     boost::mt19937 mt(static_cast<unsigned long int>(iRandomSeed));
@@ -704,7 +719,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
 
     // Final sanity checks for the program before we begin:
 
-    if (pConfig->iGeneConvTract>pConfig->dBasesToTrack){
+    if (pConfig->iGeneConvTract>pConfig->dBasesToTrack) {
         cerr<<"Warning: the gene conversion tract (-c 2nd parameter) cannot be "<<
         "longer than the length of sequence (-h parameter) to retain. ";
         pConfig->dBasesToTrack=2.0*pConfig->iGeneConvTract;
@@ -718,33 +733,146 @@ void Simulator::readInputParameters(CommandArguments arguments){
 }
 
 
-
-void Simulator::beginSimulation(){
-    try{
-        RandNumGenerator * rg = new RandNumGenerator(pConfig->iRandomSeed);
-        cout<<SEED<<"\t"<<pConfig->iRandomSeed<<endl;
-        for(unsigned int i=0;i<pConfig->iIterations;++i){
-            if (pConfig->bDebug){
-                cerr<<"Iteration: "<<i<<endl;
+void Simulator::beginSimulationMemory() {
+    try {
+        RandNumGenerator *rg = new RandNumGenerator(pConfig->iRandomSeed);
+        cout << SEED << "\t" << pConfig->iRandomSeed << endl;
+        for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
+            if (pConfig->bDebug) {
+                cerr << "Iteration: " << i << endl;
             }
-            GraphBuilder graphBuilder = GraphBuilder(pConfig,rg);
+            GraphBuilder graphBuilder = GraphBuilder(pConfig, rg);
             graphBuilder.build();
+            graphBuilder.
             graphBuilder.printHaplotypes();
 
         }
         delete rg;
-    }catch(const char* message){
-        cerr<<"Simulator caught exception with message:"<<endl<<message<<endl;
+    } catch (const char *message) {
+        cerr << "Simulator caught exception with message:" << endl << message << endl;
     }
 }
 
-Simulator::Simulator(){
-}
 
-Simulator::~Simulator(){
-    cerr<<"Simulator destructor:"<<endl;
-    delete pConfig;
-}
+    void Simulator::beginSimulation() {
+        try {
+            RandNumGenerator *rg = new RandNumGenerator(pConfig->iRandomSeed);
+            cout << SEED << "\t" << pConfig->iRandomSeed << endl;
+            for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
+                if (pConfig->bDebug) {
+                    cerr << "Iteration: " << i << endl;
+                }
+                GraphBuilder graphBuilder = GraphBuilder(pConfig, rg);
+                graphBuilder.build();
+                graphBuilder.printHaplotypes();
+
+            }
+            delete rg;
+        } catch (const char *message) {
+            cerr << "Simulator caught exception with message:" << endl << message << endl;
+        }
+    }
+
+
+
+
+    void Simulator::runFromAlphaSimr(int sampleSize, float sequenceLength, double mutation, double recombination,
+                                     vector<tuple<float, float> > *popSizeList,
+                                     vector<float> *migrationRate = new vector<float>(),
+                                     vector<int> lineage = vector<int>()) {
+
+        double defaultMigrationRate;
+
+        pConfig = new Configuration();
+        pConfig->iTotalPops = 1;
+
+        EventPtrList *pEventList = new EventPtrList;
+
+        double dDefaultMigrationRate = 0.0;
+        double dDefaultPopSize = 1.0;
+        double dDefaultGrowthAlpha = 0.0;
+
+        for (unsigned int i = 0; i < pConfig->iTotalPops; ++i) {
+            vector<double> newRow;
+            for (unsigned int j = 0; j < pConfig->iTotalPops; ++j)
+                newRow.push_back(dDefaultMigrationRate);
+            pConfig->dMigrationMatrix.push_back(newRow);
+        }
+
+        pConfig->dSeqLength = sequenceLength;
+
+        pConfig->dTheta = pConfig->dSeqLength * mutation;
+        pConfig->dRecombRateRAcrossSites = pConfig->dSeqLength * recombination;
+
+        for (tuple<float, float> pop : *popSizeList) {
+            EventPtr wrapper;
+            wrapper = EventPtr(new GenericEvent(
+                    Event::GLOBAL_POPSIZE, get<0>(pop), get<1>(pop)));
+        }
+
+
+        int lineageSize = static_cast<int>(lineage.size());
+
+        if (lineageSize > 0) {
+            if (lineageSize != 3) {
+                cerr << "ERROR, lineage not given enough arguements"
+            }
+            // merge populations
+            int iPop1 = lineage[1] - 1;
+            int iPop2 = lineage[2] - 1;
+            if (iPop1 < 0 || iPop2 < 0) {
+                cerr << "Bad values in parameters for pop IDs pop join\n";
+            }
+            if (iPop1 >= pConfig->iTotalPops ||
+                iPop2 >= pConfig->iTotalPops) {
+                cerr
+                        << "WARNING: The pop IDs used in pop join is greater than the number specified in -I.  You must have a split event before this join event.\n";
+            }
+            EventPtr wrapper = EventPtr(new PopJoinEvent(
+                    Event::POPJOIN, lineage[0], static_cast<short>(iPop1), static_cast<short>(iPop2)));
+
+        }
+        beginSimulation();
+
+
+    }
+
+    Simulator::Simulator() {
+    }
+
+
+    Simulator::~Simulator() {
+        cerr << "Simulator destructor:" << endl;
+        delete pConfig;
+    }
+
+
+
+    arma::fmat runFromAlphaSimR(string in) {
+        vector<std::string> words;
+        Simulator simulator;
+        boost::split(words, in, boost::is_any_of(", "), boost::token_compress_on);
+        CommandArguments arguments;
+        vector<string> subOption;
+        // sample size
+        subOption.emplace_back(words[0]);
+        // seq length
+        subOption.emplace_back(words[1]);
+        arguments.push_back(subOption);
+        subOption.clear();
+        for (int i=2;i<words.size();++i){
+            subOption.emplace_back(words[i]);
+            if (i==words.size()-1 || (words[i+1][0]=='-' && words[i+1][1]>=65)){
+                arguments.push_back(subOption);
+                subOption.clear();
+            }
+        }
+
+
+        simulator.readInputParameters(arguments);
+        simulator.beginSimulationMemory();
+
+    }
 
 int main(int argc,char * argv[]){
 
@@ -769,18 +897,20 @@ int main(int argc,char * argv[]){
         CommandArguments arguments;
         vector<string> subOption;
         // sample size
-        subOption.push_back(string(argv[1]));
+        subOption.emplace_back(argv[1]);
         // seq length
-        subOption.push_back(string(argv[2]));
+        subOption.emplace_back(argv[2]);
         arguments.push_back(subOption);
         subOption.clear();
         for (int i=3;i<argc;++i){
-            subOption.push_back(string(argv[i]));
+            subOption.emplace_back(argv[i]);
             if (i==argc-1 || (argv[i+1][0]=='-' && argv[i+1][1]>=65)){
                 arguments.push_back(subOption);
                 subOption.clear();
             }
         }
+
+
 
         simulator.readInputParameters(arguments);
         simulator.beginSimulation();

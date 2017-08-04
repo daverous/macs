@@ -456,6 +456,17 @@ class AlleleFreqBin{
 
 
 
+class AlphaSimRReturn {
+public:
+
+    AlphaSimRReturn();
+
+
+
+    vector<int> haplotypes;
+    double length;
+};
+
 
 
 
@@ -528,6 +539,7 @@ public:
     void build();
     // Print the haplotypes in MS format
     void printHaplotypes();
+    vector<AlphaSimRReturn> getHaplotypes();
 private:
     // The random number generator
     RandNumGenerator *pRandNumGenerator;
@@ -719,6 +731,9 @@ private:
     // Prints local tree in Newick format as done in MS
     string getNewickTree(double lastCoalHeight,NodePtr & curNode);
 
+    vector<int> getHaplotypes();
+
+    vector<int> getHaplotypes();
 };
 
 // The entry point for the program.
@@ -736,6 +751,11 @@ public:
     // Calls any coalescent simulator (e.g. fastcoal, MS). In this
     // case, constructs a new graphbuilder and calls the build() function
     void beginSimulation();
+    void runFromAlphaSimr(int sampleSize, float sequenceLength, double mutation, double recombination,
+                          vector<tuple<float, float> > *popSizeList,
+                          vector<float> *migrationRate = new vector<float>(),
+                          vector<int> lineage = vector<int>());
+    void beginSimulationMemory();
     Simulator();
     ~Simulator(); //destructor
 

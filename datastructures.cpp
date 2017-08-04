@@ -647,6 +647,102 @@ void GraphBuilder::initializeCurrentTree(){
 }
 
 
+vector<AlphaSimRReturn> GraphBuilder::getHaplotypes(){
+    unsigned int iTotalSites = pMutationPtrVector->size();
+
+    unique_ptr<vector<AlphaSimRReturn> > lines(new vector<AlphaSimRReturn>());
+
+
+    unique_ptr<vector<int>> haplotypes(new vector<int>());
+
+    AlphaSimRReturn tmp;
+
+    bool bZeroCellCount=false;
+    if (iTotalSites){
+        int iReducedSites=iTotalSites;
+        if (pConfig->bSNPAscertainment){
+            // first see if any expected count exceed actual counts
+            bool bSufficientObs=false;
+            do{
+                bSufficientObs=true;
+                auto it=pConfig->pAlleleFreqBinPtrSet->begin();
+                while(bSufficientObs && !bZeroCellCount && it!=pConfig->pAlleleFreqBinPtrSet->end()){
+                    AlleleFreqBinPtr bin = *it;
+                    auto iExpectedCount = static_cast<int>(bin->dFreq * iReducedSites);
+                    if (!iExpectedCount && bin->dFreq>0.){
+                        bZeroCellCount = true;
+                    }
+                    else if (bin->iObservedCounts<iExpectedCount){
+                        bSufficientObs = false;
+                        --iReducedSites;
+                    }else{
+                        ++it;
+                    }
+                }
+            }while(!bSufficientObs && !bZeroCellCount);
+            if (bZeroCellCount){
+                iReducedSites = 0;
+            }else{
+                int tally=0;
+                for (auto it=pConfig->pAlleleFreqBinPtrSet->begin();
+                     it!=pConfig->pAlleleFreqBinPtrSet->end();++it){
+                    AlleleFreqBinPtr bin = *it;
+                    double dStart = bin->dStart;
+                    double dEnd = bin->dEnd;
+                    auto iExpectedCount = static_cast<int>(bin->dFreq * iReducedSites);
+
+                    tally+=iExpectedCount;
+
+                    while(iExpectedCount>0){
+                        int iRandIndex = static_cast<int>(pRandNumGenerator->unifRV()*iTotalSites);
+                        MutationPtr mutation = pMutationPtrVector->at(iRandIndex);
+                        if (!mutation->bPrintOutput && mutation->dFreq>=dStart && mutation->dFreq<=dEnd){
+                            mutation->bPrintOutput = true;
+                            --iExpectedCount;
+                        }
+                    }
+                }
+                iReducedSites = tally;
+            }
+        }
+
+
+        if (iReducedSites){
+            MutationPtrVector::iterator it;
+            // copy to a temporary vector if ascertained
+            cout<<TOTALSAMPLES<<FIELD_DELIMITER<<pConfig->iSampleSize<<endl;
+            cout<<TOTALSITES<<FIELD_DELIMITER<<iReducedSites<<endl;
+            cout<<SNPBEGIN<<endl;
+            if (pConfig->bSNPAscertainment && !bZeroCellCount){
+                int origIndex=0;
+                bool indexPrinted=false;
+                for (it = pMutationPtrVector->begin();
+                     it!=pMutationPtrVector->end();++it){
+                    MutationPtr mutation = *it;
+                    if (mutation->bPrintOutput){
+                        if (indexPrinted) cout<<FIELD_DELIMITER;
+                        haplotypes->push_back(origIndex);
+                        indexPrinted=true;
+                    }
+                    ++origIndex;
+                }
+            }else{
+                for(int i=0;i<iReducedSites;++i){
+                    tmp.haplotypes.emplace_back(i);
+                }
+            }
+
+
+
+
+            lines->emplace_back(tmp);
+            cout<<endl<<SNPEND<<endl;
+        }
+    }
+    return *haplotypes;
+}
+
+
 void GraphBuilder::printHaplotypes(){
     unsigned int iTotalSites = pMutationPtrVector->size();
     bool bZeroCellCount=false;

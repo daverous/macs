@@ -1242,6 +1242,8 @@ void GraphBuilder::addMutations(double startPos,double endPos){
             FIELD_DELIMITER<< setw(15) << setprecision(9)<<startPos<<
             FIELD_DELIMITER<< setw(15) << setprecision(9)<<dMutationTime<<
             FIELD_DELIMITER;
+
+
             unsigned int iSampleSize = pConfig->iSampleSize;
             for (unsigned int iSampleIndex=0;iSampleIndex<iSampleSize;++iSampleIndex){
                 SampleNode * sample = static_cast<SampleNode*>(pSampleNodeArray[iSampleIndex].get());
