@@ -7,7 +7,6 @@
 #include <boost/algorithm/string/split.hpp> // Include for boost::split
 #include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
 //#include <RcppArmadillo.h>
-#include <armadillo>
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -213,7 +212,7 @@ void Simulator::readInputParameters(CommandArguments arguments){
                     cerr<<"INPUT: Base pairs to track is "<<pConfig->dBasesToTrack<<endl;
                     break;
                 case 's' :
-                    if (arguments[iCurrentArg].size()!=2) {
+                    if (arguments[iCurrentArg].size()<2) {
                         cerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
                         ", you must enter a single integer for the random seed\n";
                         exit(1);
@@ -733,24 +732,26 @@ void Simulator::readInputParameters(CommandArguments arguments){
 }
 
 
-void Simulator::beginSimulationMemory() {
+vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
+
+    vector<AlphaSimRReturn> toRet;
+
+
     try {
         RandNumGenerator *rg = new RandNumGenerator(pConfig->iRandomSeed);
         cout << SEED << "\t" << pConfig->iRandomSeed << endl;
         for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
-            if (pConfig->bDebug) {
-                cerr << "Iteration: " << i << endl;
-            }
             GraphBuilder graphBuilder = GraphBuilder(pConfig, rg);
             graphBuilder.build();
-            graphBuilder.
+            vector<AlphaSimRReturn> tmp = graphBuilder.getMutations();
             graphBuilder.printHaplotypes();
-
+            toRet.insert(toRet.end(), tmp.begin(), tmp.end());
         }
         delete rg;
     } catch (const char *message) {
         cerr << "Simulator caught exception with message:" << endl << message << endl;
     }
+    return  toRet;
 }
 
 
@@ -776,10 +777,10 @@ void Simulator::beginSimulationMemory() {
 
 
 
-    void Simulator::runFromAlphaSimr(int sampleSize, float sequenceLength, double mutation, double recombination,
-                                     vector<tuple<float, float> > *popSizeList,
-                                     vector<float> *migrationRate = new vector<float>(),
-                                     vector<int> lineage = vector<int>()) {
+    void Simulator::runFromAlphaSimRParams(int sampleSize, float sequenceLength, double mutation, double recombination,
+                                           vector<tuple<float, float> > *popSizeList,
+                                           vector<float> *migrationRate,
+                                           vector<int> lineage) {
 
         double defaultMigrationRate;
 
@@ -815,7 +816,7 @@ void Simulator::beginSimulationMemory() {
 
         if (lineageSize > 0) {
             if (lineageSize != 3) {
-                cerr << "ERROR, lineage not given enough arguements"
+                cerr << "ERROR, lineage not given enough arguements";
             }
             // merge populations
             int iPop1 = lineage[1] - 1;
@@ -848,7 +849,7 @@ void Simulator::beginSimulationMemory() {
 
 
 
-    arma::fmat runFromAlphaSimR(string in) {
+    void runFromAlphaSimR(string in) {
         vector<std::string> words;
         Simulator simulator;
         boost::split(words, in, boost::is_any_of(", "), boost::token_compress_on);
@@ -870,7 +871,7 @@ void Simulator::beginSimulationMemory() {
 
 
         simulator.readInputParameters(arguments);
-        simulator.beginSimulationMemory();
+        vector<AlphaSimRReturn> test = simulator.beginSimulationMemory();
 
     }
 
@@ -886,34 +887,39 @@ int main(int argc,char * argv[]){
             "the number of chromosomes sampled and the sequence length."<<endl;
             simulator.printUsage();
         }
-        cout<<COMMAND<<"\t";
-        for (int i=0;i<argc;++i){
-          if (i>0){
-            cout<<" ";
-          }
-          cout<<argv[i];
-        }
-        cout<<endl;
-        CommandArguments arguments;
-        vector<string> subOption;
-        // sample size
-        subOption.emplace_back(argv[1]);
-        // seq length
-        subOption.emplace_back(argv[2]);
-        arguments.push_back(subOption);
-        subOption.clear();
-        for (int i=3;i<argc;++i){
-            subOption.emplace_back(argv[i]);
-            if (i==argc-1 || (argv[i+1][0]=='-' && argv[i+1][1]>=65)){
-                arguments.push_back(subOption);
-                subOption.clear();
-            }
-        }
 
+        std::string commandLineStr= "";
+        for (int i=1;i<argc;i++) commandLineStr.append(std::string(argv[i]).append(" "));
+        runFromAlphaSimR(commandLineStr);
 
-
-        simulator.readInputParameters(arguments);
-        simulator.beginSimulation();
+//        cout<<COMMAND<<"\t";
+//        for (int i=0;i<argc;++i){
+//          if (i>0){
+//            cout<<" ";
+//          }
+//          cout<<argv[i];
+//        }
+//        cout<<endl;
+//        CommandArguments arguments;
+//        vector<string> subOption;
+//        // sample size
+//        subOption.emplace_back(argv[1]);
+//        // seq length
+//        subOption.emplace_back(argv[2]);
+//        arguments.push_back(subOption);
+//        subOption.clear();
+//        for (int i=3;i<argc;++i){
+//            subOption.emplace_back(argv[i]);
+//            if (i==argc-1 || (argv[i+1][0]=='-' && argv[i+1][1]>=65)){
+//                arguments.push_back(subOption);
+//                subOption.clear();
+//            }
+//        }
+//
+//
+//
+//        simulator.readInputParameters(arguments);
+//        simulator.beginSimulation();
     }catch(const char* message){
       cerr<<"Exception at main:"<<endl<<message<<endl;
     }

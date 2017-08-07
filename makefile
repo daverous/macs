@@ -1,5 +1,5 @@
 # compile options
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g  -std=c++11
 #CFLAGS = -Wall -O3
 # Add location of any library locations below with -L 
 LINKFLAGS = 

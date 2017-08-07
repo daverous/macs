@@ -10,7 +10,6 @@
 #include<boost/intrusive_ptr.hpp>
 #include<boost/random/mersenne_twister.hpp>
 #include<boost/random/uniform_01.hpp>
-
 #include "constants.h"
 //#define DIAG
 
@@ -231,7 +230,10 @@ public:
     // invalidates the event associated with this node.
     void removeEvent();
     // is there an event associated with this node?
-    bool isEventDefined();
+    bool isEventDefined() {
+        return false;
+    }
+
     // assign an event with this node
     void setEvent(EventPtr & assoEvent);
     // a place holder to identify a node at the top of the coalescing
@@ -463,7 +465,7 @@ public:
 
 
 
-    vector<int> haplotypes;
+    vector<bool > haplotypes;
     double length;
 };
 
@@ -539,13 +541,15 @@ public:
     void build();
     // Print the haplotypes in MS format
     void printHaplotypes();
-    vector<AlphaSimRReturn> getHaplotypes();
+    vector<AlphaSimRReturn> getMutations();
+
 private:
     // The random number generator
     RandNumGenerator *pRandNumGenerator;
     // Points to user specified parameters
     Configuration *pConfig;
 
+    vector<AlphaSimRReturn> mutations;
     // *** ESSENTIAL CONTAINERS POINTING TO
     // EDGES IN THE GRAPH AND THE MRCAS
     // a linked list of edges on the ARG
@@ -566,7 +570,7 @@ private:
     // grandMRCA stores the Node object which is the MRCA of the ARG
     // localMRCA is used when searching for the MRCA of the last tree
     NodePtr grandMRCA,localMRCA,xOverNode;
-    static const double dEpsilon = 1e-6;
+    constexpr static const auto dEpsilon = 1e-6;
 
     // *** USED FOR COMPUTING TIME TO COALESCENCE
     // linked list of events that must be traversed in order
@@ -731,9 +735,7 @@ private:
     // Prints local tree in Newick format as done in MS
     string getNewickTree(double lastCoalHeight,NodePtr & curNode);
 
-    vector<int> getHaplotypes();
 
-    vector<int> getHaplotypes();
 };
 
 // The entry point for the program.
@@ -751,11 +753,11 @@ public:
     // Calls any coalescent simulator (e.g. fastcoal, MS). In this
     // case, constructs a new graphbuilder and calls the build() function
     void beginSimulation();
-    void runFromAlphaSimr(int sampleSize, float sequenceLength, double mutation, double recombination,
-                          vector<tuple<float, float> > *popSizeList,
-                          vector<float> *migrationRate = new vector<float>(),
-                          vector<int> lineage = vector<int>());
-    void beginSimulationMemory();
+    void runFromAlphaSimRParams(int sampleSize, float sequenceLength, double mutation, double recombination, vector<tuple<float, float> > *popSizeList,
+                                vector<float> *migrationRate = new vector<float>(),
+                                vector<int> lineage = vector<int>());
+
+    vector<AlphaSimRReturn> beginSimulationMemory();
     Simulator();
     ~Simulator(); //destructor
 
@@ -832,6 +834,7 @@ inline double Edge::getLength(){
     return this->dLength;
 }
 
+
 inline short int Node::getPopulation(){
     return this->iPopulation;
 }
@@ -863,7 +866,7 @@ inline EdgePtr Node::getTopEdgeByIndex(short unsigned int index){
     if (index>=this->topEdgeSize)
         throw "Index for top edge out of range";
     #endif
-    return index?topEdge2.lock():topEdge1.lock();
+    return index != 0u ?topEdge2.lock():topEdge1.lock();
 //        return index?topEdge2:topEdge1;
 //    return edge;
 }

@@ -993,10 +993,10 @@ NodePtr & xOverNode, EventPtr & newCoalEvent){
                     }
                 }else{
                     if (bAboveOrigin){
-                        migrantPops.push_back(iOriginPop);
+                        migrantPops.push_back(reinterpret_cast<int &&>(iOriginPop));
                     }
                     // In any case a candidate migrant is the new coal line
-                    migrantPops.push_back(iRequestedPop);
+                    migrantPops.push_back(reinterpret_cast<int &&>(iRequestedPop));
                 }
                 int iTotalChrom = migrantPops.size();
                 int migrant=-1,i=0;
@@ -1228,9 +1228,6 @@ void GraphBuilder::addMutations(double startPos,double endPos){
         if (startPos>=endPos){
             bEndMutate = true;
         }else{
-            //if (pMutationPtrVector->size()==0){
-            //   cout<<HAPLOBEGIN<<endl;
-            //}
             double dRandomSpot = pRandNumGenerator->unifRV() * dLastTreeLength;
             double dMutationTime=-1.;
             EdgePtr selectedEdge = getRandomEdgeOnTree(dMutationTime,dRandomSpot);
@@ -1238,20 +1235,26 @@ void GraphBuilder::addMutations(double startPos,double endPos){
             mutateBelowEdge(selectedEdge);
             NodePtrVector::iterator it;
 
+
+
             cout<<MUTATIONSITE<<FIELD_DELIMITER<<pMutationPtrVector->size()<<
             FIELD_DELIMITER<< setw(15) << setprecision(9)<<startPos<<
             FIELD_DELIMITER<< setw(15) << setprecision(9)<<dMutationTime<<
             FIELD_DELIMITER;
 
-
+            unique_ptr<AlphaSimRReturn> temp(new AlphaSimRReturn());
+            temp->length = startPos;
             unsigned int iSampleSize = pConfig->iSampleSize;
             for (unsigned int iSampleIndex=0;iSampleIndex<iSampleSize;++iSampleIndex){
                 SampleNode * sample = static_cast<SampleNode*>(pSampleNodeArray[iSampleIndex].get());
                 sites[iSampleIndex]=sample->bAffected;
                 cout<<sample->bAffected;
+                temp->haplotypes.push_back(sample->bAffected);
                 sample->bAffected=false;
             }
             cout<<endl;
+
+            mutations.push_back(*temp);
             double dFreq=0.;
             if (pConfig->bSNPAscertainment){
                 // first compute the MAF
@@ -1273,7 +1276,7 @@ void GraphBuilder::addMutations(double startPos,double endPos){
                     ++bin->iObservedCounts;
                 }else throw "Did not find a frequency range for freq";
             }
-            pMutationPtrVector->push_back(MutationPtr(new Mutation(startPos,dFreq)));
+            pMutationPtrVector->push_back(new Mutation(startPos, dFreq));
 
         }
     }
@@ -1467,5 +1470,9 @@ void GraphBuilder::build(){
     //        cout<<HAPLOEND<<endl;
     //}
     cerr<<"gcstarts:"<<gcstarts<<" gcends:"<<gcends<<" xovers:"<<xovers<<endl;
+}
+
+vector<AlphaSimRReturn> GraphBuilder::getMutations() {
+    return mutations;
 }
 

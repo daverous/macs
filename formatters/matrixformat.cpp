@@ -11,7 +11,7 @@ int main(int argc,char * argv[]){
     int totalpos;
     int totalpersons;
     ostringstream oss;
-    srand(time(NULL));
+    srand(time(nullptr));
     oss<<TEMPFILE_PREFIX<<rand();
     string tempfile=oss.str();
 
