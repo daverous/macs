@@ -849,7 +849,7 @@ vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
 
 
 
-    void runFromAlphaSimR(string in) {
+    vector<AlphaSimRReturn> runFromAlphaSimR(string in) {
         vector<std::string> words;
         Simulator simulator;
         boost::split(words, in, boost::is_any_of(", "), boost::token_compress_on);
@@ -872,7 +872,7 @@ vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
 
         simulator.readInputParameters(arguments);
         vector<AlphaSimRReturn> test = simulator.beginSimulationMemory();
-
+        return test;
     }
 
 int main(int argc,char * argv[]){
