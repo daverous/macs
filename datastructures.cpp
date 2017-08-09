@@ -373,7 +373,9 @@ short int PopJoinEvent::getDestPop(){
 }
 
 GraphBuilder::~GraphBuilder(){
+#ifdef DIAG
     cerr<<"Graphbuilder destructor\n";
+#endif
     this->pConfig = NULL;
     this->pRandNumGenerator = NULL;
 
@@ -415,7 +417,9 @@ GraphBuilder::GraphBuilder(Configuration *pConfig,RandNumGenerator * pRG){
     this->pTreeEdgesToCoalesceArray = new EdgePtr[pConfig->iSampleSize];
     for (int i=0;i<pConfig->iTotalPops;++i){
         this->pEdgeVectorByPop->push_back(EdgePtrVector());
+#ifdef DIAG
         cerr<<"DEBUG: Size at "<<i<<" is "<<this->pEdgeVectorByPop->at(i).size()<<endl;
+#endif
         this->pVectorIndicesToRecycle->push_back(EdgeIndexQueue());
     }
     this->pSampleNodeArray = new NodePtr[pConfig->iSampleSize];
@@ -812,20 +816,24 @@ void GraphBuilder::printHaplotypes(){
         if (iReducedSites){
             MutationPtrVector::iterator it;
             // copy to a temporary vector if ascertained
+#ifdef DIAG
             cout<<TOTALSAMPLES<<FIELD_DELIMITER<<pConfig->iSampleSize<<endl;
             cout<<TOTALSITES<<FIELD_DELIMITER<<iReducedSites<<endl;
             cout<<SNPBEGIN<<endl;
+
             if (pConfig->bSNPAscertainment && !bZeroCellCount){
                 int origIndex=0;
                 bool indexPrinted=false;
                 for (it = pMutationPtrVector->begin();
                 it!=pMutationPtrVector->end();++it){
                     MutationPtr mutation = *it;
+                    #ifdef DIAG
                     if (mutation->bPrintOutput){
                         if (indexPrinted) cout<<FIELD_DELIMITER;
                         cout<<origIndex;
                         indexPrinted=true;
                     }
+                    #endif
                     ++origIndex;
                 }
             }else{
@@ -835,6 +843,7 @@ void GraphBuilder::printHaplotypes(){
                 }
             }
             cout<<endl<<SNPEND<<endl;
+#endif
         }
     }
 }

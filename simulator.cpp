@@ -30,7 +30,9 @@ RandNumGenerator::RandNumGenerator(unsigned long iRandomSeed){
 }
 
 RandNumGenerator::~RandNumGenerator(){
+#ifdef DIAG
   cerr<<"Rand generator destructor\n";
+#endif
   delete unif;
 }
 
@@ -111,7 +113,9 @@ Configuration::Configuration(){
 }
 
 Configuration::~Configuration(){
+#ifdef DIAG
     cerr<<"Configuration destructor\n";
+#endif
     delete pEventList;
     if (bSNPAscertainment){
         AlleleFreqBinPtrSet::iterator it;
@@ -165,13 +169,18 @@ void Simulator::readInputParameters(CommandArguments arguments){
 
     pConfig->pPopList.push_back(newPop);
     pConfig->iSampleSize = iSampleSize;
+#ifdef DIAG
     cerr<<"INPUT: Sample size is now "<<pConfig->iSampleSize<<endl;
+#endif
 	if( iSampleSize<= 0) {
 	    cerr<<"First argument error. Sample size needs to be greater than 0.\n";
 	    printUsage();
     }
+
     pConfig->dSeqLength = atof(arguments[0][1].data());
+#ifdef DIAG
     cerr<<"INPUT: Seq length is now "<<pConfig->dSeqLength<<endl;
+#endif
     set<float> eventTimes;
     for (unsigned int iCurrentArg = 1;iCurrentArg<iTotalArgs;++iCurrentArg){
         try{
@@ -209,7 +218,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                         exit(1);
                     }
                     pConfig->dBasesToTrack = atof(arguments[iCurrentArg][1].data());
+#ifdef DIAG
                     cerr<<"INPUT: Base pairs to track is "<<pConfig->dBasesToTrack<<endl;
+#endif
                     break;
                 case 's' :
                     if (arguments[iCurrentArg].size()<2) {
@@ -218,7 +229,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                         exit(1);
                     }
                     pConfig->iRandomSeed = atoi(arguments[iCurrentArg][1].data());
+#ifdef DIAG
                     cerr<<"INPUT: Random seed used is "<<pConfig->iRandomSeed<<endl;
+#endif
                     break;
                 case 't' :  // set mutation parameter
                     if (arguments[iCurrentArg].size()!=2) {
@@ -227,7 +240,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                         exit(1);
                     }
                     pConfig->dTheta = pConfig->dSeqLength * atof(arguments[iCurrentArg][1].data());
+#ifdef DIAG
                     cerr<<"INPUT: Scaled mutation rate is now "<<pConfig->dTheta<<endl;
+#endif
                     break;
                 case 'F':
                     if (arguments[iCurrentArg].size()!=3){
@@ -262,7 +277,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                             lastStart = end;
                             ++total;
                         }
+#ifdef DIAG
                         cerr<<"INPUT: Accepted "<<total<<" freqency bins"<<endl;
+#endif
                         inFile.close();
                         pConfig->bSNPAscertainment = true;
                         if (cumFreq>1.0) throw "The total frequency entered exceeds one";
@@ -285,7 +302,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                         exit(1);
                     }
                     pConfig->dRecombRateRAcrossSites = pConfig->dSeqLength * atof(arguments[iCurrentArg][1].data());
+#ifdef DIAG
                     cerr<<"INPUT: Scaled recombination rate is now "<<pConfig->dRecombRateRAcrossSites<<endl;
+#endif
                     break;
                 case 'c' :
                     if (arguments[iCurrentArg].size()!=3) {
@@ -299,9 +318,10 @@ void Simulator::readInputParameters(CommandArguments arguments){
                         cerr<<"The gene conversion parameters must be positive\n";
                         exit(1);
                     }
-
+#ifdef DIAG
                     cerr<<"INPUT: Gene conversion ratio is now "<<pConfig->dGeneConvRatio<<endl;
                     cerr<<"INPUT: Gene conversion tract length is now "<<pConfig->iGeneConvTract<<endl;
+#endif
                     break;
                 case 'R':
                     if (arguments[iCurrentArg].size()!=2){
@@ -327,7 +347,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                             pConfig->pHotSpotBinPtrList->push_back(bin);
                             ++total;
                         }
+#ifdef DIAG
                         cerr<<"INPUT: Accepted "<<total<<" hotspots"<<endl;
+#endif
                         inFile.close();
                         pConfig->bVariableRecomb = true;
                     }
@@ -339,7 +361,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                         exit(1);
                     }
                     pConfig->iIterations = atoi(arguments[iCurrentArg][1].data());
+#ifdef DIAG
                     cerr<<"INPUT: Iterations is now "<<pConfig->iIterations<<endl;
+#endif
                     break;
                 case 'I' :
                     if (arguments[iCurrentArg].size()<2) {
@@ -370,8 +394,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                         }else{
                             pConfig->dGlobalMigration = dDefaultMigrationRate;
                         }
+#ifdef DIAG
                         cerr<<"INPUT: Global migration rate to "<<pConfig->dGlobalMigration<<endl;
-
+#endif
                     }else{
                         cerr<<"For flag "<<arguments[iCurrentArg][0][1]<<
                         ", the number of island sample sizes entered does not match the first parameter\n";
@@ -456,7 +481,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                             exit(1);
                         }
                         pConfig->pPopList[popId].setPopSize(popSize) ;
+#ifdef DIAG
                         cerr<<"INPUT: Pop "<<arguments[iCurrentArg][1]<<" has size: "<<popSize<<endl;
+#endif
                     }
                     break;
                 case 'g' :
@@ -477,7 +504,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                             exit(1);
                         }
                         pConfig->pPopList[popId].setGrowthAlpha(dDefaultGrowthAlpha);
+#ifdef DIAG
                         cerr<<"INPUT: Pop "<<arguments[iCurrentArg][1].data()<<" has growth rate: "<<dDefaultGrowthAlpha<<endl;
+#endif
                     }
                     break;
                 case 'G' :
@@ -493,8 +522,10 @@ void Simulator::readInputParameters(CommandArguments arguments){
 //                    cerr<<"INPUT: Growth rate for all pop "<<dDefaultGrowthAlpha<<endl;
                         for(int i=0; i<pConfig->iTotalPops; ++i){
                            pConfig->pPopList[i].setGrowthAlpha(dDefaultGrowthAlpha);
+#ifdef DIAG
                            cerr<<"INPUT: Growth rate for pop "<<i<<" is "<<
                            pConfig->pPopList[i].getGrowthAlpha()<<endl;
+#endif
                         }
                     }
                     break;
@@ -509,7 +540,9 @@ void Simulator::readInputParameters(CommandArguments arguments){
                         exit(1);
                     }
                     dTime = atof(arguments[iCurrentArg][1].data());
+#ifdef DIAG
                     cerr<<"INPUT: At time "<<dTime<<": ";
+#endif
                     if (eventTimes.find(dTime)==eventTimes.end()){
                       eventTimes.insert(dTime);
                     }else{
@@ -739,7 +772,9 @@ vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
 
     try {
         RandNumGenerator *rg = new RandNumGenerator(pConfig->iRandomSeed);
+#ifdef DIAG
         cout << SEED << "\t" << pConfig->iRandomSeed << endl;
+#endif
         for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
             GraphBuilder graphBuilder = GraphBuilder(pConfig, rg);
             graphBuilder.build();
@@ -758,7 +793,9 @@ vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
     void Simulator::beginSimulation() {
         try {
             RandNumGenerator *rg = new RandNumGenerator(pConfig->iRandomSeed);
+#ifdef DIAG
             cout << SEED << "\t" << pConfig->iRandomSeed << endl;
+#endif
             for (unsigned int i = 0; i < pConfig->iIterations; ++i) {
                 if (pConfig->bDebug) {
                     cerr << "Iteration: " << i << endl;
@@ -843,7 +880,9 @@ vector<AlphaSimRReturn> Simulator::beginSimulationMemory() {
 
 
     Simulator::~Simulator() {
+#ifdef DIAG
         cerr << "Simulator destructor:" << endl;
+#endif
         delete pConfig;
     }
 
@@ -923,6 +962,8 @@ int main(int argc,char * argv[]){
     }catch(const char* message){
       cerr<<"Exception at main:"<<endl<<message<<endl;
     }
+#ifdef DIAG
 	cerr<<"Program is complete\n";
+#endif
 	exit(0);
 }

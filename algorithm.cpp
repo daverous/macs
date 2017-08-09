@@ -1236,11 +1236,12 @@ void GraphBuilder::addMutations(double startPos,double endPos){
             NodePtrVector::iterator it;
 
 
-
+#ifdef DIAG
             cout<<MUTATIONSITE<<FIELD_DELIMITER<<pMutationPtrVector->size()<<
             FIELD_DELIMITER<< setw(15) << setprecision(9)<<startPos<<
             FIELD_DELIMITER<< setw(15) << setprecision(9)<<dMutationTime<<
             FIELD_DELIMITER;
+#endif
 
             unique_ptr<AlphaSimRReturn> temp(new AlphaSimRReturn());
             temp->length = startPos;
@@ -1248,12 +1249,15 @@ void GraphBuilder::addMutations(double startPos,double endPos){
             for (unsigned int iSampleIndex=0;iSampleIndex<iSampleSize;++iSampleIndex){
                 SampleNode * sample = static_cast<SampleNode*>(pSampleNodeArray[iSampleIndex].get());
                 sites[iSampleIndex]=sample->bAffected;
+#ifdef DIAG
                 cout<<sample->bAffected;
+#endif
                 temp->haplotypes.push_back(sample->bAffected);
                 sample->bAffected=false;
             }
+#ifdef DIAG
             cout<<endl;
-
+#endif
             mutations.push_back(*temp);
             double dFreq=0.;
             if (pConfig->bSNPAscertainment){
@@ -1357,7 +1361,9 @@ bool GraphBuilder::checkPendingGeneConversions(double & curPos){
 void GraphBuilder::build(){
     double curPos = 0.0,lastPos = 0.0,dMaxPos = 1.0;
     unsigned int iLastCumulativePos = 0;
+#ifdef DIAG
     cerr<<"Debugging: "<<pConfig->bDebug<<endl;
+#endif
 
     HotSpotBinPtrList::iterator hotSpotIt;
     if (pConfig->bVariableRecomb){
@@ -1372,12 +1378,16 @@ void GraphBuilder::build(){
     int iHistoryMax = 0;
     do{
         if (iGraphIteration==0){
+#ifdef DIAG
             cerr<<endl<<"Graph Builder begin"<<endl;
+#endif
             NodePtr dummy1;
             EventPtr dummy2;
             double current=clock();
             this->traverseEvents(false,dummy1,dummy2);
+#ifdef DIAG
             cerr<<"Time for build prior tree: "<<(clock()-current)<<" seconds\n";
+#endif
         }else{
             // at this point decide whether we invoke a plain x-over
             // or a new gene conversion event
@@ -1421,14 +1431,16 @@ void GraphBuilder::build(){
             }else{
                 ++iHistoryMax;
             }
+#ifdef DIAG
             cerr<<"iHistoryMax: "<<iHistoryMax<<endl;
+#endif
             if (iHistoryMax>=0){
                 pruneARG(iHistoryMax);
             }
         }
 
         initializeCurrentTree();
-
+#ifdef DIAG
         cerr<<"Tree:"<<iGraphIteration<<
         ",pos:"<<curPos<<
         ",len:"<<dLastTreeLength<<
@@ -1437,6 +1449,7 @@ void GraphBuilder::build(){
         ",len:"<<dArgLength<<
         ",TMRCA:"<<grandMRCA->getHeight()<<
         endl;
+#endif
         if (pConfig->bVariableRecomb){
             bool bBinCrossed;
             do{
@@ -1452,9 +1465,11 @@ void GraphBuilder::build(){
             //uint iSegLength = (curPos-lastPos)*pConfig->dSeqLength;
             // Schiffels following two lines fixes
             uint iSegLength = curPos*pConfig->dSeqLength-iLastCumulativePos;
-            iLastCumulativePos += iSegLength; 
+            iLastCumulativePos += iSegLength;
+#ifdef DIAG
             cout<<NEWICKTREE<<"\t["<<iSegLength<<"]"<<
             getNewickTree(localMRCA->getHeight(),localMRCA)<<";"<<endl;
+#endif
         }
         // check if there was an existing gene conversion event that needs
         // to be closed. backtrack if necessary.
@@ -1465,11 +1480,13 @@ void GraphBuilder::build(){
         lastPos = curPos;
         ++iGraphIteration;
     }while(curPos<dMaxPos);
+#ifdef DIAG
     cerr<<"Completed the chromosome at position "<<curPos<<endl;
     //if (pMutationPtrVector->size()>0){
     //        cout<<HAPLOEND<<endl;
     //}
     cerr<<"gcstarts:"<<gcstarts<<" gcends:"<<gcends<<" xovers:"<<xovers<<endl;
+#endif
 }
 
 vector<AlphaSimRReturn> GraphBuilder::getMutations() {
